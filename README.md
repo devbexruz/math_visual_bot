@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🧮 Math Visual AI
+<img src="frontend/public/icon.png" alt="Math Visual AI Logo" width="120" />
+
+# Math Visual AI
 
 ### AI-Powered Mathematical Shape Visualizer via Telegram Bot
 

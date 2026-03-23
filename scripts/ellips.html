@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathVisualBot - Ellipsoid Equation</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui-container { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
+        .label { background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 8px; pointer-events: auto; border: 1px solid #444; }
+        .equation { font-style: italic; color: #ff5500; font-weight: bold; margin-top: 5px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div class="label">
+            <div>Ellipsoidning umumiy tenglamasi:</div>
+            <div id="equation-text" class="equation">x²/5² + y²/3² + z²/2² = 1</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // 1. SAHNA SOZLAMALARI
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // YORDAMCHI ELEMENTLAR
+        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        scene.add(grid);
+        const axes = new THREE.AxesHelper(10);
+        scene.add(axes);
+        // scene.add(surface);
+        
+
+        // 2. ELLIPSOID (MESH) YARATISH
+        const geometry = new THREE.SphereGeometry(1, 32, 32); // Birlik sfera
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xff5500, 
+            side: THREE.DoubleSide, 
+            transparent: true, 
+            opacity: 0.8,
+            wireframe: true 
+        });
+        const ellipsoid = new THREE.Mesh(geometry, material);
+        scene.add(ellipsoid);
+
+        // Yoritgichlar
+        const light = new THREE.DirectionalLight(0xffffff, 1.5);
+        light.position.set(10, 20, 10);
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        camera.position.set(10, 10, 10);
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // 3. MATEMATIK HISOB-KITOB VA YANGILASH
+        const params = { a: 5, b: 3, c: 2 };
+        const equationDisplay = document.getElementById('equation-text');
+
+        function updateEllipsoid() {
+            // Sferani scale parametrlarini (a, b, c) o'zgartirish orqali ellipsoidga aylantirish
+            ellipsoid.scale.set(params.a, params.b, params.c);
+
+            // Matnni yangilash
+            equationDisplay.innerText = `x²/${params.a}² + y²/${params.b}² + z²/${params.c}² = 1`;
+        }
+
+        // 4. GUI NAZORATI
+        const gui = new GUI({ title: 'Ellipsoid Parametrlari' });
+        gui.add(params, 'a', 0.1, 10).name('a (Yarim o\'q X)').onChange(updateEllipsoid);
+        gui.add(params, 'b', 0.1, 10).name('b (Yarim o\'q Y)').onChange(updateEllipsoid);
+        gui.add(params, 'c', 0.1, 10).name('c (Yarim o\'q Z)').onChange(updateEllipsoid);
+        gui.addColor({ color: '#ff5500' }, 'color').onChange(val => material.color.set(val));
+        gui.add(material, 'wireframe').name('To\'rli (Wireframe)');
+
+        updateEllipsoid(); // Dastlabki hisob
+
+        // Render loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

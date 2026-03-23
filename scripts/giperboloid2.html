@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathVisualBot - Ikki pallali Giperboloid</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui-container { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
+        .label { background: rgba(0,0,0,0.8); padding: 10px 15px; border-radius: 8px; pointer-events: auto; border: 1px solid #444; }
+        .equation { font-style: italic; color: #00ddff; font-weight: bold; margin-top: 5px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div class="label">
+            <div>Ikki pallali giperboloid tenglamasi:</div>
+            <div id="equation-text" class="equation">-x²/A² - y²/B² + z²/C² = 1</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+        import { ParametricGeometry } from 'three/addons/geometries/ParametricGeometry.js';
+
+        // 1. SAHNA VA RENDERER SOZLAMALARI
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // Juxda muhim: Kesish (clipping) xususiyatini yoqish
+        renderer.localClippingEnabled = true; 
+        
+        document.body.appendChild(renderer.domElement);
+
+        // Grid (To'r) - O'lchami 20x20. Ya'ni x va z o'qlari bo'yicha -10 dan +10 gacha.
+        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        grid.position.y = 0; 
+        scene.add(grid);
+        const axes = new THREE.AxesHelper(10);
+        scene.add(axes);
+
+        // Yorug'lik (Metal effekt uchun muhim)
+        const light = new THREE.DirectionalLight(0xffffff, 1.5);
+        light.position.set(10, 20, 10);
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        camera.position.set(10, 10, 10);
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // 2. KESUVCHI TEKISLIKLAR (Clipping Planes)
+        // Grid chegarasi x va z bo'yicha [-10, 10], balandligi esa [-10, 10] gacha qilib cheklaymiz
+        const limit = 10;
+        const clipPlanes = [
+            new THREE.Plane(new THREE.Vector3(1, 0, 0), limit),  // O'ng devor (X limit)
+            new THREE.Plane(new THREE.Vector3(-1, 0, 0), limit), // Chap devor (-X limit)
+            new THREE.Plane(new THREE.Vector3(0, 0, 1), limit),  // Orqa devor (Z limit)
+            new THREE.Plane(new THREE.Vector3(0, 0, -1), limit), // Old devor (-Z limit)
+            new THREE.Plane(new THREE.Vector3(0, 1, 0), limit),  // Yuqori devor (Y limit)
+            new THREE.Plane(new THREE.Vector3(0, -1, 0), limit), // Pastki devor (-Y limit)
+            new THREE.Plane(new THREE.Vector3(-1, -1, 0), -5)  // Pastki devor (-Y limit)
+        ];
+
+        // 3. MATEMATIKA VA GEOMETRIYA
+        const params = { 
+            A: 2, 
+            B: 2, 
+            C: 3, 
+            color: '#00ddff', 
+            wireframe: false // Yaltirashini ko'rish uchun o'chirilgan
+        };
+        const eqText = document.getElementById('equation-text');
+
+        const hyperboloidGroup = new THREE.Group();
+        scene.add(hyperboloidGroup);
+
+        function createGeometries() {
+            while(hyperboloidGroup.children.length > 0){ 
+                hyperboloidGroup.remove(hyperboloidGroup.children[0]); 
+            }
+
+            const cosh = (x) => (Math.exp(x) + Math.exp(-x)) / 2;
+            const sinh = (x) => (Math.exp(x) - Math.exp(-x)) / 2;
+
+            // Biz har doim kattaroq shakl chizamiz (masalan v_max=3), 
+            // chunki baribir Clipping Planes uni Grid chegarasida kesib tashlaydi.
+            const V_MAX = 3; 
+
+            const positiveSheet = new ParametricGeometry((u, v, target) => {
+                u *= Math.PI * 2;
+                v *= V_MAX;
+
+                const x = params.A * sinh(v) * Math.cos(u);
+                const z = params.B * sinh(v) * Math.sin(u);
+                const y = params.C * cosh(v); 
+                target.set(x, y, z);
+            }, 50, 50);
+
+            const negativeSheet = new ParametricGeometry((u, v, target) => {
+                u *= Math.PI * 2;
+                v *= V_MAX;
+
+                const x = params.A * sinh(v) * Math.cos(u);
+                const z = params.B * sinh(v) * Math.sin(u);
+                const y = -params.C * cosh(v); 
+                target.set(x, y, z);
+            }, 50, 50);
+            
+            
+            // new THREE.Plane(new THREE.Vector3(-1, -1, 0), 5)  // Pastki devor (-Y limit)
+            // Ushbu teksitlikni chizish
+            const planeGeometry = new THREE.PlaneGeometry(20, 20);
+            planeGeometry.rotateX(-Math.PI / 2); // Tekislikni yotqizish
+            const planeMaterial = new THREE.MeshStandardMaterial({ 
+                color: '#ff5555', 
+                side: THREE.DoubleSide, 
+                transparent: true, 
+                opacity: 0.5,
+                roughness: 0.1,
+                metalness: 0.8,
+                clippingPlanes: clipPlanes, // Mana shu qator tekislikni kesadi
+                clipIntersection: false
+            });
+            // Yorug'lik uchun normalar
+            positiveSheet.computeVertexNormals();
+            negativeSheet.computeVertexNormals();
+
+            // Material: Metal effekt va Kesish (clipping) xususiyati yoqilgan
+            const material = new THREE.MeshStandardMaterial({ 
+                color: params.color, 
+                side: THREE.DoubleSide, 
+                wireframe: params.wireframe,
+                transparent: true, 
+                opacity: 0.9,
+                roughness: 0.2,
+                metalness: 0.5,
+                clippingPlanes: clipPlanes, // Mana shu qator shaklni kesadi
+                clipIntersection: false
+            });
+
+            hyperboloidGroup.add(new THREE.Mesh(positiveSheet, material));
+            hyperboloidGroup.add(new THREE.Mesh(negativeSheet, material));
+        }
+
+        function updateScene() {
+            createGeometries();
+            eqText.innerText = `-x²/${params.A.toFixed(1)}² - y²/${params.B.toFixed(1)}² + z²/${params.C.toFixed(1)}² = 1`;
+        }
+
+        // GUI PANEL
+        const gui = new GUI({ title: 'Tenglama Koeffitsiyentlari' });
+        gui.add(params, 'A', 1, 10).name('A (X o\'qi)').onChange(updateScene);
+        gui.add(params, 'B', 1, 10).name('B (Y o\'qi)').onChange(updateScene);
+        gui.add(params, 'C', 1, 10).name('C (Z o\'qi - Masofa)').onChange(updateScene);
+        gui.addColor(params, 'color').name('Rang').onChange(updateScene);
+        gui.add(params, 'wireframe').name('To\'rli (Wireframe)').onChange(updateScene);
+
+        updateScene();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

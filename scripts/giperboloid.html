@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathVisualBot - Sirtlar Transformatsiyasi</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #ui-container { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
+        .label { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; pointer-events: auto; border: 1px solid #444; }
+        .equation { font-style: italic; color: #00ddff; font-weight: bold; margin-top: 5px; font-size: 1.2em; }
+        #shape-name { color: #ffeb3b; font-weight: bold; margin-top: 10px; font-size: 1.1em; text-transform: uppercase;}
+    </style>
+</head>
+<body>
+
+    <div id="ui-container">
+        <div class="label">
+            <div>Sirt tenglamasi:</div>
+            <div id="equation-text" class="equation">z = (0.5)x² + (0.5)y²</div>
+            <div id="shape-name">Elliptik paraboloid (Kosa)</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // 1. SAHNA
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // YORDAMCHI ELEMENTLAR
+        const grid = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+        grid.position.y = -5; // To'rni biroz pastga tushiramiz
+        scene.add(grid);
+        const axes = new THREE.AxesHelper(10);
+        scene.add(axes);
+
+        // 2. SIRT (GEOMETRIYA) YARATISH
+        // Biz 20x20 o'lchamdagi va ichida 60x60 ta katakchasi bor tekislik yaratamiz
+        const geometry = new THREE.PlaneGeometry(20, 20, 60, 60);
+        geometry.rotateX(-Math.PI / 2); // Tekislikni yotqizish
+
+        // Asl x va y koordinatalarini saqlab qolamiz (keyin z ni hisoblash uchun)
+        const positionAttribute = geometry.attributes.position;
+        const originalPositions = [];
+        for (let i = 0; i < positionAttribute.count; i++) {
+            originalPositions.push({
+                x: positionAttribute.getX(i),
+                y: positionAttribute.getZ(i) // Plane yotqizilgani uchun 2D dagi Y o'qi Z ga o'tgan
+            });
+        }
+
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0x00ddff, 
+            side: THREE.DoubleSide, 
+            wireframe: false,
+            roughness: 0.3,
+            metalness: 0.2
+        });
+        const surface = new THREE.Mesh(geometry, material);
+        scene.add(surface);
+
+        // YORITGICHLAR
+        const light = new THREE.DirectionalLight(0xffffff, 1.5);
+        light.position.set(10, 20, 10);
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        camera.position.set(15, 10, 15);
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // 3. MATEMATIK TRANSFORMATSIYA
+        const params = { A: 0.5, B: 0.5, scale: 0.2 };
+        const eqText = document.getElementById('equation-text');
+        const shapeName = document.getElementById('shape-name');
+
+        function updateSurface() {
+            const positions = surface.geometry.attributes.position;
+
+            for (let i = 0; i < positions.count; i++) {
+                const x = originalPositions[i].x;
+                const y = originalPositions[i].y;
+                
+                // ASOSIY SEHR SHU YERDA: z = A*x^2 + B*y^2
+                // scale - shakl ekranga sig'ishi uchun kichraytiruvchi koeffitsiyent
+                const z = (params.A * x * x + params.B * y * y) * params.scale;
+                
+                positions.setY(i, z); // 3D fazoda balandlik Y o'qi hisoblanadi
+            }
+
+            // Sirt o'zgargach, yorug'lik to'g'ri tushishi uchun normalarni qayta hisoblaymiz
+            surface.geometry.computeVertexNormals();
+            surface.geometry.attributes.position.needsUpdate = true;
+
+            // Matnlarni yangilash
+            eqText.innerText = `z = (${params.A.toFixed(2)})x² + (${params.B.toFixed(2)})y²`;
+
+            if (params.A * params.B > 0) {
+                shapeName.innerText = params.A > 0 ? "Elliptik paraboloid (Kosa)" : "To'ntarilgan kosa";
+                shapeName.style.color = "#ffeb3b"; // Sariq
+            } else if (params.A * params.B < 0) {
+                shapeName.innerText = "Giperbolik paraboloid (Egar / Pringles)";
+                shapeName.style.color = "#ff5500"; // Qizg'ish
+            } else if (params.A === 0 && params.B === 0) {
+                shapeName.innerText = "Tekislik (Plane)";
+                shapeName.style.color = "#00ddff"; // Havo rang
+            } else {
+                shapeName.innerText = "Parabolik silindr (Nov)";
+                shapeName.style.color = "#88ff00"; // Yashil
+            }
+        }
+
+        // 4. GUI NAZORATI
+        const gui = new GUI({ title: 'Sirt Parametrlari' });
+        gui.add(params, 'A', -1, 1).step(0.1).name('A koeffitsiyenti (X²)').onChange(updateSurface);
+        gui.add(params, 'B', -1, 1).step(0.1).name('B koeffitsiyenti (Y²)').onChange(updateSurface);
+        gui.addColor({ color: '#00ddff' }, 'color').onChange(val => material.color.set(val));
+        gui.add(material, 'wireframe').name('To\'rli ko\'rinish');
+
+        updateSurface(); // Boshlang'ich holatni chizish
+
+        // Render loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

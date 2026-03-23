@@ -1,0 +1,14 @@
+/* SVG ichidagi 1-qismni (masalan, birinchi chiziqni) qizil qilish */
+.icon-wrapper svg path:nth-child(1) {
+  fill: #ff0000;
+}
+
+/* SVG ichidagi 2-qismni ko'k qilish */
+.icon-wrapper svg path:nth-child(2) {
+  fill: #0000ff;
+}
+
+/* Agar aylana (circle) ishtirok etgan bo'lsa */
+.icon-wrapper svg circle {
+  fill: #00ff00;
+}

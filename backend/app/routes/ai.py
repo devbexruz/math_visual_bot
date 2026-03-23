@@ -1,0 +1,72 @@
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..ai import generate_shapes
+from ..crud import create_shape, create_workspace
+from ..database import get_db
+from ..schemas import WorkspaceOut
+from .users import get_current_user
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/ai", tags=["ai"])
+
+
+class GenerateRequest(BaseModel):
+    prompt: str
+
+
+class GenerateResponse(BaseModel):
+    workspace: WorkspaceOut
+    shapes_count: int
+
+
+@router.post("/generate", response_model=GenerateResponse)
+async def ai_generate(
+    body: GenerateRequest,
+    user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Foydalanuvchi so'rovi asosida Gemini orqali workspace + shapes yaratish."""
+    if not body.prompt.strip():
+        raise HTTPException(status_code=400, detail="prompt bo'sh bo'lmasligi kerak")
+
+    try:
+        result = await generate_shapes(body.prompt)
+    except Exception:
+        logger.exception("Gemini xatosi")
+        raise HTTPException(status_code=502, detail="AI so'rovni qayta ishlashda xatolik")
+
+    ws_name = result.get("workspace_name", "Yangi olam")
+    ws_desc = result.get("workspace_description", "")
+    ws_type = result.get("workspace_type", "3D")
+    if ws_type not in ("2D", "3D"):
+        ws_type = "3D"
+    shapes_list = result.get("shapes", [])
+
+    if not shapes_list:
+        raise HTTPException(status_code=422, detail="AI so'rovga mos shakl topa olmadi")
+
+    workspace = await create_workspace(db, user.id, ws_name, ws_desc, ws_type)
+
+    count = 0
+    for s in shapes_list:
+        try:
+            await create_shape(
+                db,
+                workspace_id=workspace.id,
+                name=s["name"],
+                shape_type=s["type"],
+                data=s["data"],
+            )
+            count += 1
+        except Exception:
+            logger.warning("Shape qo'shishda xato: %s", s, exc_info=True)
+
+    # Refresh to get updated shapes_count
+    await db.refresh(workspace)
+
+    return GenerateResponse(workspace=WorkspaceOut.model_validate(workspace), shapes_count=count)

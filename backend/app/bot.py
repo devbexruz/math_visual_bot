@@ -184,8 +184,8 @@ async def _process_prompt(
     except Exception:
         logger.exception("Gemini xatosi")
         await waiting_msg.edit_text(
-            "❌ So'rovni qayta ishlashda xatolik yuz berdi.\n"
-            "Iltimos, boshqacha so'rov yozing yoki /help ni ko'ring."
+            "AI yuklmaasi ortib ketdi biroz keyinroq urinib ko'ring...\n"
+            "Uzur so'raymiz, hozirda bu xizmat bepul va resurslar cheklangan."
         )
         return
 

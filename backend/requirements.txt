@@ -5,3 +5,4 @@ aiosqlite
 pydantic-settings
 aiogram>=3.10,<4
 google-genai
+python-multipart

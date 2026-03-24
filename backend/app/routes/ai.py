@@ -1,10 +1,10 @@
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..ai import generate_shapes
+from ..ai import generate_shapes, transcribe_audio
 from ..crud import create_shape, create_workspace
 from ..database import get_db
 from ..schemas import WorkspaceOut
@@ -70,3 +70,51 @@ async def ai_generate(
     await db.refresh(workspace)
 
     return GenerateResponse(workspace=WorkspaceOut.model_validate(workspace), shapes_count=count)
+
+
+ALLOWED_AUDIO_TYPES = {
+    "audio/ogg",
+    "audio/wav",
+    "audio/mpeg",
+    "audio/mp4",
+    "audio/webm",
+    "audio/flac",
+}
+
+MAX_AUDIO_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+class SpeechToTextResponse(BaseModel):
+    text: str
+
+
+@router.post("/speech-to-text", response_model=SpeechToTextResponse)
+async def speech_to_text(
+    file: UploadFile = File(...),
+    user=Depends(get_current_user),
+):
+    """Audio faylni matnga o'girish (speech recognition)."""
+    content_type = file.content_type or "audio/ogg"
+    if content_type not in ALLOWED_AUDIO_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Qo'llab-quvvatlanmaydigan audio format: {content_type}",
+        )
+
+    audio_bytes = await file.read()
+    if len(audio_bytes) > MAX_AUDIO_SIZE:
+        raise HTTPException(status_code=400, detail="Audio fayl hajmi 10 MB dan oshmasligi kerak")
+
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Audio fayl bo'sh")
+
+    try:
+        text = await transcribe_audio(audio_bytes, mime_type=content_type)
+    except Exception:
+        logger.exception("Speech-to-text xatosi")
+        raise HTTPException(status_code=502, detail="Ovozni matnga o'girishda xatolik yuz berdi")
+
+    if not text:
+        raise HTTPException(status_code=422, detail="Ovozdan matn aniqlab bo'lmadi")
+
+    return SpeechToTextResponse(text=text)

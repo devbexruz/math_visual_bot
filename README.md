@@ -20,7 +20,7 @@
 
 **Math Visual AI** is an intelligent Telegram bot that transforms natural language descriptions into interactive 2D and 3D mathematical visualizations. Simply describe a shape in text or voice — the AI does the rest.
 
-[**Try the Bot →**](https://t.me/MathVisualBot)
+| [**Try the Weebsite →**](https://iqromin.uz) | [**Try the Bot →**](https://t.me/MathVisualBot) |
 
 </div>
 

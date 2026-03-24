@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     WEBHOOK_HOST: str = "https://iqromind.uz"
     WEBHOOK_PATH: str = "/api/webhook"
 
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite-preview"
 
     @property
     def webhook_url(self) -> str:

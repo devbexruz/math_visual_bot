@@ -70,6 +70,9 @@ Qoidalar:
 5. workspace_description — nimani ko'rsatayotganini tushuntirsin.
 6. Faqat yuqoridagi ro'yxatdagi shakllardan foydalanishing mumkin.
 7. Barcha shapes ning type maydoni workspace_type ga mos bo'lishi kerak.
+8. Kreative yondash va mavjud shakl turlari bilan hosil qilishga harakat qil.
+9. <shape_name> maydonini shape turi bilan nomla (masalan: cone, ellips).
+10. Har qanday shape jsonda har bir parametri mavjud bo'lishi shart.
 """
 from google import genai
 
@@ -77,8 +80,8 @@ from google import genai
 # Aks holda client = genai.Client(api_key="SIZNING_API_KALITINGIZ") deb bering.
 
 # print("API qabul qiladigan aniq modellar ro'yxati:")
-# for model in client.models.list():
-#     print(model.name)
+for model in client.models.list():
+    print(model.name)
 
 async def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/ogg") -> str:
     """SpeechRecognition kutubxonasi orqali audio ni matnga o'girish."""

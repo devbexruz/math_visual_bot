@@ -81,20 +81,47 @@ from google import genai
 #     print(model.name)
 
 async def transcribe_audio(audio_bytes: bytes, mime_type: str = "audio/ogg") -> str:
-    """Gemini orqali audio ni matnga o'girish."""
-    import base64
+    """SpeechRecognition kutubxonasi orqali audio ni matnga o'girish."""
+    import asyncio
+    import io
 
-    audio_part = types.Part(
-        inline_data=types.Blob(mime_type=mime_type, data=audio_bytes)
-    )
-    response = await client.aio.models.generate_content(
-        model=settings.GEMINI_MODEL,
-        contents=[
-            audio_part,
-            "Ushbu audio yozuvni matnga o'gir. Faqat transkripsiya qilingan matnni qaytar, boshqa hech narsa emas.",
-        ],
-    )
-    return response.text.strip()
+    import speech_recognition as sr
+    from pydub import AudioSegment
+
+    def _recognize() -> str:
+        audio_stream = io.BytesIO(audio_bytes)
+
+        format_map = {
+            "audio/ogg": "ogg",
+            "audio/wav": "wav",
+            "audio/mpeg": "mp3",
+            "audio/mp4": "mp4",
+            "audio/webm": "webm",
+            "audio/flac": "flac",
+        }
+        fmt = format_map.get(mime_type, "ogg")
+
+        # pydub orqali WAV ga konvertatsiya
+        audio_segment = AudioSegment.from_file(audio_stream, format=fmt)
+        wav_io = io.BytesIO()
+        audio_segment.export(wav_io, format="wav")
+        wav_io.seek(0)
+
+        # SpeechRecognition orqali tanib olish
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(wav_io) as source:
+            audio_data = recognizer.record(source)
+
+        try:
+            text = recognizer.recognize_google(audio_data, language="uz-UZ")
+        except sr.UnknownValueError:
+            raise ValueError("Ovozni tanib bo'lmadi, qaytadan urinib ko'ring")
+        except sr.RequestError as exc:
+            raise RuntimeError(f"Speech Recognition xizmati xatosi: {exc}")
+
+        return text
+
+    return await asyncio.to_thread(_recognize)
 
 
 async def generate_shapes(user_prompt: str) -> dict:

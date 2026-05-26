@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..ai import generate_shapes, transcribe_audio
-from ..crud import create_shape, create_workspace
-from ..database import get_db
-from ..schemas import WorkspaceOut
-from .users import get_current_user
+from app.ai import generate_shapes, transcribe_audio
+from app.crud import create_shape, create_workspace
+from app.database import get_db
+from app.schemas import WorkspaceOut
+from app.routes.users import get_current_user
 
 logger = logging.getLogger(__name__)
 

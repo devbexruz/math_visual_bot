@@ -4,15 +4,15 @@ from aiogram import Bot, Dispatcher, F, Router, types
 from aiogram.filters import Command, CommandStart
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
-from .ai import generate_shapes, transcribe_audio
-from .config import settings
-from .crud import (
+from app.ai import generate_shapes, transcribe_audio
+from app.config import settings
+from app.crud import (
     create_shape,
     create_workspace,
     get_or_create_user,
     get_user_by_telegram_id,
 )
-from .database import async_session
+from app.database import async_session
 
 logger = logging.getLogger(__name__)
 

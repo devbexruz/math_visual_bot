@@ -5,10 +5,10 @@ from aiogram.types import Update
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from .bot import bot, dp
-from .config import settings
-from .database import Base, engine
-from .routes import ai, shapes, users, workspaces
+from app.bot import bot, dp
+from app.config import settings
+from app.database import Base, engine
+from app.routes import ai, shapes, users, workspaces
 
 logger = logging.getLogger(__name__)
 

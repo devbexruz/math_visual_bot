@@ -3,15 +3,15 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..crud import (
+from app.crud import (
     create_workspace,
     delete_workspace,
     get_workspace_by_id,
     get_workspaces_by_user,
 )
-from ..database import get_db
-from ..schemas import WorkspaceCreate, WorkspaceOut
-from .users import get_current_user
+from app.database import get_db
+from app.schemas import WorkspaceCreate, WorkspaceOut
+from app.routes.users import get_current_user
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 

@@ -4,7 +4,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import Shape, ShapeTypeEnum, User, Workspace
+from app.models import Shape, ShapeTypeEnum, User, Workspace
 
 
 # ==================== USER ====================

@@ -4,7 +4,7 @@ import logging
 from google import genai
 from google.genai import types
 
-from .config import settings
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
